@@ -44,40 +44,45 @@ ckpt_manager = tf.train.CheckpointManager(ckpt,
 # @tf.function
 def train_one_step(text_batch, labels_batch):
   with tf.GradientTape() as tape:
-      logits, seq_lens, log_likelihood = model(text_batch, labels_batch,training=True)
+      logits, text_lens, log_likelihood = model(text_batch, labels_batch,training=True)
       loss = - tf.reduce_mean(log_likelihood)
   gradients = tape.gradient(loss, model.trainable_variables)
   optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+  return loss,logits, text_lens
 
-  # paths = []
-  # for logit, text_len in zip(logits, text_lens):
-  #     viterbi_path, _ = tf_ad.text.viterbi_decode(logit[:text_len], model.transition_params)
-  #     paths.append(viterbi_path)
-  #
-  # correct_prediction = tf.equal(
-  #     tf.convert_to_tensor(tf.keras.preprocessing.sequence.pad_sequences(paths, padding='post'), dtype=tf.int32),
-  #     tf.convert_to_tensor(tf.keras.preprocessing.sequence.pad_sequences(labels_batch, padding='post'), dtype=tf.int32)
-  # )
-  # accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
-  accuracy = 0.5
-
-  return loss,accuracy
+def get_acc_one_step(logits, text_lens, labels_batch):
+    paths = []
+    accuracy = 0
+    for logit, text_len, labels in zip(logits, text_lens, labels_batch):
+        viterbi_path, _ = tf_ad.text.viterbi_decode(logit[:text_len], model.transition_params)
+        paths.append(viterbi_path)
+        correct_prediction = tf.equal(
+            tf.convert_to_tensor(tf.keras.preprocessing.sequence.pad_sequences([viterbi_path], padding='post'),
+                                 dtype=tf.int32),
+            tf.convert_to_tensor(tf.keras.preprocessing.sequence.pad_sequences([labels[:text_len]], padding='post'),
+                                 dtype=tf.int32)
+        )
+        accuracy = accuracy + tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+        # print(tf.reduce_mean(tf.cast(correct_prediction, tf.float32)))
+    accuracy = accuracy / len(paths)
+    return accuracy
 
 
 best_acc = 0
 step = 0
 for epoch in range(args.epoch):
     for _, (text_batch, labels_batch) in enumerate(train_dataset):
-        loss, accuracy = train_one_step(text_batch, labels_batch)
         step = step + 1
-        logger.info('epoch %3d, step %3d, loss %7.4f , accuracy %6.4f' % (epoch, step, loss, accuracy))
+        loss, logits, text_lens = train_one_step(text_batch, labels_batch)
         if step % 20 == 0:
-            # print('epoch %d, step %d, loss %.4f , accuracy %.4f' % (epoch, step, loss, accuracy))
-            # if accuracy > best_acc:
-            # best_acc = accuracy
-            ckpt_manager.save()
-            logger.info("model saved")
+            accuracy = get_acc_one_step(logits, text_lens, labels_batch)
+            logger.info('epoch %d, step %d, loss %.4f , accuracy %.4f' % (epoch, step, loss, accuracy))
+            if accuracy > best_acc:
+              best_acc = accuracy
+              ckpt_manager.save()
+              logger.info("model saved")
+
 
 logger.info("finished")
 

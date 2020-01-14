@@ -73,8 +73,9 @@ def tokenize(filename,vocab2id,tag2id):
                     content.append(vocab2id.get(w,0))
                     label.append(tag2id.get(t,0))
                 else:
-                    contents.append(content)
-                    labels.append(label)
+                    if content and label:
+                        contents.append(content)
+                        labels.append(label)
                     content = []
                     label = []
             except Exception as e:

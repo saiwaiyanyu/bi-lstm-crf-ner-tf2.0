@@ -24,10 +24,10 @@ class NerModel(tf.keras.Model):
                                              trainable=False)
         self.dropout = tf.keras.layers.Dropout(0.5)
 
+    # @tf.function
     def call(self, text,labels=None,training=None):
-        text_lens = tf.math.reduce_sum(tf.cast(tf.math.not_equal(text, -1), dtype=tf.int32), axis=-1)
+        text_lens = tf.math.reduce_sum(tf.cast(tf.math.not_equal(text, 0), dtype=tf.int32), axis=-1)
         # -1 change 0
-
         inputs = self.embedding(text)
         inputs = self.dropout(inputs, training)
         logits = self.dense(self.biLSTM(inputs))
