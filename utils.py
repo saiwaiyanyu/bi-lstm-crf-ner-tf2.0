@@ -123,6 +123,8 @@ def format_result(chars, tags):
             entities.append(entity)
             entity = []
         entity.append([index, char, tag, entity_continue])
+    if entity:
+        entities.append(entity)
 
     entities_result = []
     for entity in entities:
@@ -140,8 +142,8 @@ def format_result(chars, tags):
 
 
 if __name__ == "__main__":
-    text = ['[CLS]', '东', '方', '大', '气', '东', '方', '市', '国', '土', '局', '会', '同', '大', '田', '镇', '政', '府', '、', '市', '生', '态', '环', '境', '保', '护', '局', '、', '市', '交', '通', '运', '输', '局', '、', '市', '交', '警', '大', '队', '组', '[SEP]']
-    tags =  ['[CLS]', 'B-TIM', 'I-TIM', 'I-ORG', 'O', 'I-ORG', 'I-ORG', 'I-ORG', 'I-ORG', 'I-ORG', 'I-ORG', 'I-ORG', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B-ORG', 'I-ORG', 'I-ORG', 'I-ORG', 'I-ORG', 'I-ORG', 'O', 'B-ORG', 'I-ORG', 'I-ORG', 'I-ORG', 'I-ORG', 'O', '[SEP]']
+    text = ['国','家','发','展','计','划','委','员','会','副','主','任','王','春','正']
+    tags =  ['B-ORG', 'I-ORG', 'I-ORG', 'I-ORG', 'I-ORG', 'I-ORG', 'I-ORG', 'I-ORG', 'E-ORG', 'O', 'O', 'O', 'B-PER', 'I-PER', 'E-PER']
     entities_result= format_result(text,tags)
     print(json.dumps(entities_result, indent=4, ensure_ascii=False))
 
